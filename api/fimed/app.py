@@ -8,6 +8,8 @@ from fimed import __version__
 from fimed.config import settings
 from fimed.logger import logger
 from fimed.routes.authentication import router as auth_router
+from fimed.routes.patient_crud import router as patient_router
+
 
 app = FastAPI(
     title="FIMED",
@@ -34,8 +36,11 @@ async def health():
 
 
 app.include_router(auth_router, prefix="/api/v2/auth")
-
+app.include_router(patient_router,prefix="/api/v2/patient")
 
 def run_server():
     logger.info(f"🚀 Deploying server at http://{settings.API_HOST}:{settings.API_PORT}")
     uvicorn.run(app, host=settings.API_HOST, port=settings.API_PORT, root_path=settings.ROOT_PATH, log_level="info")
+
+
+

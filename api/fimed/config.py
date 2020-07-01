@@ -19,7 +19,7 @@ class _Settings(BaseSettings):
     ROOT_PATH: str = ""
 
     # database connection
-    MONGO_DNS: MongoDns = "mongodb://root:root@localhost:27017"
+    MONGO_DNS: MongoDns = "mongodb://localhost:27017"
 
     class Config:
         if not Path(".env").is_file():
