@@ -8,13 +8,13 @@ from fimed import __version__
 from fimed.config import settings
 from fimed.logger import logger
 from fimed.routes.authentication import router as auth_router
-from fimed.routes.patient_crud import router as patient_router
+from fimed.routes.patient import router as patient_router
 
 app = FastAPI(
     title="FIMED",
     docs_url="/api/docs",
     openapi_prefix=settings.ROOT_PATH,
-    description="https://github.com/dandobjim/FIMED2.0",
+    description="https://github.com/dandobjim/FIMED2.0-BACKEND",
     version=__version__,
 )
 
@@ -34,14 +34,6 @@ app.add_middleware(
 async def health():
     return Response(status_code=status.HTTP_200_OK)
 
-@app.post('/api/post',
-             name="Example of post",
-             tags=["POST"])
-async def run(name:str, age: int):
-    print(name)
-    return name
-
-
 
 app.include_router(auth_router, prefix="/api/v2/auth")
 app.include_router(patient_router, prefix="/api/v2/patient")
@@ -49,7 +41,6 @@ app.include_router(patient_router, prefix="/api/v2/patient")
 
 def run_server():
     logger.info(f"🚀 Deploying server at http://{settings.API_HOST}:{settings.API_PORT}")
-    uvicorn.run(app, host=settings.API_HOST, port=settings.API_PORT, root_path=settings.ROOT_PATH, log_level="info")
-
-
-run_server()
+    uvicorn.run(
+        app, host=settings.API_HOST, port=settings.API_PORT, root_path=settings.ROOT_PATH, log_level="info",
+    )
