@@ -32,7 +32,7 @@ $ fimed -h
 Server can be [deployed](https://fastapi.tiangolo.com/deployment/) with *uvicorn*, a lightning-fast ASGI server, using the command-line client.
 
 ```console
-$ fimed server
+$ fimed deploy
 ```
 
 Online documentation is available at `/api/docs`.
