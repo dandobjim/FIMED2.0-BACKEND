@@ -12,14 +12,14 @@ class MongoDns(AnyUrl):
 
 class _Settings(BaseSettings):
     # api settings
-    API_HOST: str = "0.0.0.0"
+    API_HOST: str = "localhost"
     API_PORT: int = 8080
 
     # for applications sub-mounted below a given URL path
     ROOT_PATH: str = ""
 
     # database connection
-    MONGO_DNS: MongoDns = "mongodb://localhost:27017"
+    MONGO_DNS: MongoDns = "mongodb://root:root@localhost:27017"
 
     class Config:
         if not Path(".env").is_file():

@@ -22,42 +22,16 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # patients
 
-
-class PatientBase(BaseModel):
-    fullname: str
-    age: int
-    email: str = None
-
-class PatientCreateRequest(PatientBase):
-
-    @validator("fullname")
-    def name_must_contain_spaces(cls, v):
-         if ' ' not in v:
-            raise ValueError('fullname must contain a space between name and surname')
-        return v.title()
-
-    @validator("age")
-    def age_must_be_numeric(cls,v):
-        if type(v) != int:
-            raise ValueError('age must be numeric')
-
-    @validator("email")
-    def email_is_valid(cls, v):
-        assert "@" in v, "email is not valid"
-        return v
-
-
-class Patient(PatientBase):
+class Patient():
     disabled: bool = False
 
     @staticmethod
-    def create(fullname: str, age:int, email:str, id_clinico:str):
+    def create(patient_data: dict, id_clinico: str):
         """
         Create a new patient.
         """
         database = get_connection()
-        db = mongo_client.FIMED
-        col = db.Clinicians
+        col = database.users
 
         objeto = col.find_one({
             "_id": ObjectId(id_clinico)
@@ -68,23 +42,22 @@ class Patient(PatientBase):
             },
             {
                 "$push": {
-                    "pacientes": {
+                    "patients": {
                         "_id": uuid.uuid1().hex,
-                        "data": datos_paciente
+                        "data": patient_data
                     }
                 }
             }
         )
-    
+
     @staticmethod
-    def create_by_csv(id_clinico:str, file, tempfile):
+    def create_by_csv(id_clinico: str, file, tempfile):
         """
             Create patients usign csv file
         """
 
         database = get_connection()
-        db = mongo_client.FIMED
-        col = db.Clinicians
+        col = database.users
 
         csv_file = pd.DataFrame(pd.read_csv(file, sep=";", header=0, index_col=False))
         csv_file.to_json(tempfile, orient="records", date_format="epoch", double_precision=10,
@@ -99,7 +72,7 @@ class Patient(PatientBase):
                     },
                     {
                         "$push": {
-                            "pacientes": {
+                            "patients": {
                                 "_id": uuid.uuid1().hex,
                                 "data": d
                             }
@@ -115,32 +88,27 @@ class Patient(PatientBase):
         """
 
         database = get_connection()
-        db = mongo_client.FIMED
-        col = db.Clinicians
-        
+        col = database.users
+
         objeto = col.find_one({
             "_id": ObjectId(id_clinico)
         })
-        for obj in objeto["pacientes"]:
-            return (obj["data"])
-    
+        return objeto["patients"]
+
     @staticmethod
     def search_by_id(id_clinico, id_paciente):
         """
             Search Patients by id
         """
         database = get_connection()
-        db = mongo_client.FIMED
-        col = db.Clinicians
+        col = database.users
 
         objeto = col.find_one({
             "_id": ObjectId(id_clinico)
         })
-
-        for obj in objeto["pacientes"]:
+        for obj in objeto["patients"]:
             if (obj["_id"] == id_paciente):
-                return obj["data"]
-        print("No existe paciente")
+               return obj["data"]
 
     @staticmethod
     def delete(id_clinico, id_paciente):
@@ -148,8 +116,7 @@ class Patient(PatientBase):
             Delete patients by id
         """
         database = get_connection()
-        db = mongo_client.FIMED
-        col = db.Clinicians
+        col = database.users
 
         objeto = col.find_one({
             "_id": ObjectId(id_clinico)
@@ -160,28 +127,27 @@ class Patient(PatientBase):
             },
             {
                 "$pull": {
-                    "pacientes": {
+                    "patients": {
                         "_id": id_paciente
                     }
                 }
             }
         )
-    
+
     @staticmethod
     def update(id_clinico, id_paciente, updated_data):
 
         database = get_connection()
-        db = mongo_client.FIMED
-        col = db.Clinicians
+        col = database.users
 
         col.update(
             {
                 "_id": ObjectId(id_clinico),
-                "pacientes._id": id_paciente
+                "patients._id": id_paciente
             },
             {
                 "$set": {
-                    "pacientes.$.data": updated_data
+                    "patients.$.data": updated_data
                 }
             }
         )

@@ -25,3 +25,7 @@ def get_connection() -> Database:
             raise ConnectionError(f"Could not connect to database with connection string {settings.MONGO_DNS}")
         _connection = client.fimed
     return _connection
+
+
+
+
