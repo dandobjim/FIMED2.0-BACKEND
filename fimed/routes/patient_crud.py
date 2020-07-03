@@ -4,23 +4,23 @@ from fastapi import HTTPException, Depends, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.status import HTTP_409_CONFLICT, HTTP_401_UNAUTHORIZED
 
-from fimed.model.patient import Patient
+from fimed.model.patient import Patient, PatientModel
 router = APIRouter()
 
 
 @router.post(
     "/create", name="Create patient ", tags=["patient"]
 )
-async def register_patient(patient: dict, clinic_id: str):
-    patient_in_db = Patient.create(patient, clinic_id)
+async def register_patient(clinical_information: PatientModel, clinic_id: str):
+    patient_in_db = Patient.create(clinical_information, clinic_id)
     return patient_in_db
 
 
 @router.post(
     "/csv", name = "Insert patient by csv file", tags=["patient"]
 )
-async def register_patient_using_csv(clinic_id: str, file_path: str, tempfile_path: str):
-    csv_patients = Patient.create_by_csv(clinic_id, file_path, tempfile_path)
+async def register_patient_using_csv(clinic_id: str, file_path: str, temp_file_path: str):
+    csv_patients = Patient.create_by_csv(clinic_id, file_path, temp_file_path)
     return  csv_patients
 
 
@@ -29,10 +29,7 @@ async def register_patient_using_csv(clinic_id: str, file_path: str, tempfile_pa
 )
 async def see_all_patients(clinic_id:str):
     patients = Patient.see_all_by_clinic_id(clinic_id)
-    patient_list = []
-    for patient in patients:
-        patient_list.append(patient)
-    return patient_list
+    return patients
 
 
 @router.get(

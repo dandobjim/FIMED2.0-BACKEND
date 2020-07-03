@@ -20,13 +20,15 @@ class Token(BaseModel):
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-# patients
+class PatientModel(BaseModel):
+    clinical_information: dict
+
 
 class Patient:
     disabled: bool = False
 
     @staticmethod
-    def create(patient_data: dict, id_clinician: str):
+    def create(patient_data: PatientModel, id_clinician: str):
         """
         Create a new patient.
         """
@@ -41,7 +43,7 @@ class Patient:
                 "$push": {
                     "patients": {
                         "_id": uuid.uuid1().hex,
-                        "data": patient_data
+                        "clinical_information": patient_data.clinical_information
                     }
                 }
             }
@@ -71,7 +73,7 @@ class Patient:
                         "$push": {
                             "patients": {
                                 "_id": uuid.uuid1().hex,
-                                "data": d
+                                "clinical_information": d
                             }
                         }
                     }
@@ -104,9 +106,11 @@ class Patient:
             "_id": ObjectId(id_clinician)
         })
 
+        print(clinician)
+
         for obj in clinician["patients"]:
             if obj["_id"] == id_patient:
-                return obj["data"]
+                return obj["clinical_information"]
 
     @staticmethod
     def delete(id_clinician, id_patient):
@@ -142,7 +146,7 @@ class Patient:
             },
             {
                 "$set": {
-                    "patients.$.data": updated_data
+                    "patients.$.clinical_information": updated_data
                 }
             }
         )

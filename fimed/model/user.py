@@ -1,8 +1,9 @@
 from passlib.context import CryptContext
 from pydantic import BaseModel, validator
+from typing import List
 
 from fimed.database import get_connection
-
+from fimed.model.patient import PatientModel
 
 # security
 
@@ -22,7 +23,6 @@ class UserBase(BaseModel):
     username: str
     fullname: str = None
     email: str
-    patients: list = None
 
 
 class UserCreateRequest(UserBase):
