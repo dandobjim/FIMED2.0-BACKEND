@@ -4,11 +4,13 @@ from fastapi import HTTPException, Depends, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.status import HTTP_409_CONFLICT, HTTP_401_UNAUTHORIZED
 
-from fimed.auth import authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, get_current_active_user
+from fimed.auth import (
+    authenticate_user,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    create_access_token,
+    get_current_active_user,
+)
 from fimed.model.user import UserCreateRequest, UserInDB, User, Token
-
-from fimed.database import get_connection
-
 
 router = APIRouter()
 
