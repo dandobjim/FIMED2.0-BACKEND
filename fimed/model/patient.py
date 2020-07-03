@@ -22,23 +22,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # patients
 
-class Patient():
+class Patient:
     disabled: bool = False
 
     @staticmethod
-    def create(patient_data: dict, id_clinico: str):
+    def create(patient_data: dict, id_clinician: str):
         """
         Create a new patient.
         """
         database = get_connection()
         col = database.users
 
-        objeto = col.find_one({
-            "_id": ObjectId(id_clinico)
-        })
         col.update(
             {
-                "_id": ObjectId(id_clinico)
+                "_id": ObjectId(id_clinician)
             },
             {
                 "$push": {
@@ -51,7 +48,7 @@ class Patient():
         )
 
     @staticmethod
-    def create_by_csv(id_clinico: str, file, tempfile):
+    def create_by_csv(id_clinician: str, file, temp_file):
         """
             Create patients usign csv file
         """
@@ -60,15 +57,15 @@ class Patient():
         col = database.users
 
         csv_file = pd.DataFrame(pd.read_csv(file, sep=";", header=0, index_col=False))
-        csv_file.to_json(tempfile, orient="records", date_format="epoch", double_precision=10,
+        csv_file.to_json(temp_file, orient="records", date_format="epoch", double_precision=10,
                          force_ascii=True, date_unit="ms", default_handler=None)
 
-        with open(tempfile) as data_file:
+        with open(temp_file) as data_file:
             data = json.load(data_file)
             for d in data:
                 col.update(
                     {
-                        "_id": ObjectId(id_clinico)
+                        "_id": ObjectId(id_clinician)
                     },
                     {
                         "$push": {
@@ -79,10 +76,10 @@ class Patient():
                         }
                     }
                 )
-        os.remove(tempfile)
+        os.remove(temp_file)
 
     @staticmethod
-    def see_all_by_clinic_id(id_clinico):
+    def see_all_by_clinic_id(id_clinician):
         """
             See all patients by clinic id.
         """
@@ -90,60 +87,58 @@ class Patient():
         database = get_connection()
         col = database.users
 
-        objeto = col.find_one({
-            "_id": ObjectId(id_clinico)
+        clinician = col.find_one({
+            "_id": ObjectId(id_clinician)
         })
-        return objeto["patients"]
+        return clinician["patients"]
 
     @staticmethod
-    def search_by_id(id_clinico, id_paciente):
+    def search_by_id(id_clinician, id_patient):
         """
             Search Patients by id
         """
         database = get_connection()
         col = database.users
 
-        objeto = col.find_one({
-            "_id": ObjectId(id_clinico)
+        clinician = col.find_one({
+            "_id": ObjectId(id_clinician)
         })
-        for obj in objeto["patients"]:
-            if (obj["_id"] == id_paciente):
-               return obj["data"]
+
+        for obj in clinician["patients"]:
+            if obj["_id"] == id_patient:
+                return obj["data"]
 
     @staticmethod
-    def delete(id_clinico, id_paciente):
+    def delete(id_clinician, id_patient):
         """
             Delete patients by id
         """
         database = get_connection()
         col = database.users
 
-        objeto = col.find_one({
-            "_id": ObjectId(id_clinico)
-        })
         col.update(
             {
-                "_id": ObjectId(id_clinico)
+                "_id": ObjectId(id_clinician)
             },
             {
                 "$pull": {
                     "patients": {
-                        "_id": id_paciente
+                        "_id": id_patient
                     }
                 }
             }
         )
 
     @staticmethod
-    def update(id_clinico, id_paciente, updated_data):
+    def update(id_clinician, id_patient, updated_data):
 
         database = get_connection()
         col = database.users
 
         col.update(
             {
-                "_id": ObjectId(id_clinico),
-                "patients._id": id_paciente
+                "_id": ObjectId(id_clinician),
+                "patients._id": id_patient
             },
             {
                 "$set": {

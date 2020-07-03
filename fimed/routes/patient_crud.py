@@ -17,7 +17,7 @@ async def register_patient(patient: dict, clinic_id: str):
 
 
 @router.post(
-    "/csv", name = "Insert patien by csv file", tags=["patient"]
+    "/csv", name = "Insert patient by csv file", tags=["patient"]
 )
 async def register_patient_using_csv(clinic_id: str, file_path: str, tempfile_path: str):
     csv_patients = Patient.create_by_csv(clinic_id, file_path, tempfile_path)
