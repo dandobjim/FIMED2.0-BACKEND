@@ -22,7 +22,10 @@ class UserBase(BaseModel):
     username: str
     fullname: str = None
     email: str
+<<<<<<< HEAD
     patients: list
+=======
+>>>>>>> a0697f63e9cda236fd62dc84adf56a81795ee170
 
 
 class UserCreateRequest(UserBase):
