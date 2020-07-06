@@ -22,7 +22,7 @@ class UserBase(BaseModel):
     username: str
     fullname: str = None
     email: str
-    patients: list = None
+    patients: list
 
 
 class UserCreateRequest(UserBase):
