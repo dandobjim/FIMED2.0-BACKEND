@@ -44,3 +44,6 @@ def run_server():
     uvicorn.run(
         app, host=settings.API_HOST, port=settings.API_PORT, root_path=settings.ROOT_PATH, log_level="info",
     )
+
+
+run_server()
