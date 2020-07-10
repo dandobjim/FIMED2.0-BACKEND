@@ -76,8 +76,9 @@ class Doctor(User):
                     {
                         "$push": {
                             "patients": {
-                                "_id": uuid.uuid1().hex,
-                                "clinical_information": d
+                                "_id": str(uuid.uuid4()),
+                                "clinical_information": d,
+                                "created_at": datetime.now()
                             }
                         }
                     }
