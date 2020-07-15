@@ -8,6 +8,7 @@ import os
 from fimed.database import get_connection
 from fimed.model.patient import Patient
 from fimed.model.user import User
+from fimed.model.form import Form
 
 
 class Doctor(User):
@@ -76,7 +77,7 @@ class Doctor(User):
                     {
                         "$push": {
                             "patients": {
-                                "_id": str(uuid.uuid4()),
+                                "id": str(uuid.uuid4()),
                                 "clinical_information": d,
                                 "created_at": datetime.now()
                             }
@@ -124,3 +125,14 @@ class Doctor(User):
         )
 
         return patient
+
+    def create_form(self, data_structure:dict) -> Form:
+        database = get_connection()
+
+        form = Form(data_structure)
+        print(form)
+        database.users.update(
+            {"username": self.username}, {"$push": {"form_structure": form.dict(exclude_unset=True)}}, upsert=True,
+        )
+
+        return form
