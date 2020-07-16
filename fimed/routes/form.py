@@ -9,15 +9,17 @@ from fimed.model.clinician import Doctor
 from fimed.model.patient import Patient
 from fimed.model.user import UserInDB
 
+from fimed.model.form import Form
+
 
 router = APIRouter()
 
 
 @router.post("/create", name="Create a new form's structure", tags=["form"])
-async def create_form(data_structure: dict,
+async def create_form(form: Form,
                                      current_doctor: UserInDB = Depends(get_current_active_user)):
     try:
-        Doctor(**current_doctor.dict()).create_form(data_structure)
+        Doctor(**current_doctor.dict()).create_form(form)
     except ValidationError as e:
         logger.exception(e)
         raise HTTPException(status_code=500, detail=f"Form Structure could not be created")

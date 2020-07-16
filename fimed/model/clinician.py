@@ -126,13 +126,9 @@ class Doctor(User):
 
         return patient
 
-    def create_form(self, data_structure:dict) -> Form:
+    def create_form(self, data_structure:Form) -> Form:
         database = get_connection()
 
-        form = Form(data_structure)
-        print(form)
         database.users.update(
-            {"username": self.username}, {"$push": {"form_structure": form.dict(exclude_unset=True)}}, upsert=True,
+            {"username": self.username}, {"$push": {"form_structure": data_structure.dict(exclude_unset=True)}}, upsert=True,
         )
-
-        return form

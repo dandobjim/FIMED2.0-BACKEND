@@ -1,7 +1,12 @@
 from pydantic import BaseModel
+from typing import List
+
+
+class Row(BaseModel):
+    name: str
+    rtype: str
 
 
 class Form(BaseModel):
-    id: str
-    data_structure: dict
+    rows: List[Row]
 
