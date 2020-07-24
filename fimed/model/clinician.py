@@ -12,6 +12,7 @@ from fimed.model.form import Form
 
 
 class Doctor(User):
+
     def new_patient(self, patient_data: dict) -> Patient:
         """
         Creates a new patient.
@@ -132,3 +133,14 @@ class Doctor(User):
         database.users.update(
             {"username": self.username}, {"$push": {"form_structure": data_structure.dict(exclude_unset=True)}}, upsert=True,
         )
+
+    def get_data_structure(self) -> Form:
+        database = get_connection()
+        clinician: dict = database.users.find_one({"username": self.username})
+        data_structure = {}
+
+        for structure in clinician["form_structure"]:
+            data_structure = Form(**structure)
+            # print(data_structure)
+        return data_structure
+

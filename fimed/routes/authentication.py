@@ -33,7 +33,9 @@ async def register_to_system(user: UserCreateRequest):
 )
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
+    print("Entro aqui y compruebo usuario")
     if not user:
+        print("error de usuario")
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
