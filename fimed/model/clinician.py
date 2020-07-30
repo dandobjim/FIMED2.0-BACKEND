@@ -17,8 +17,9 @@ class Doctor(User):
         """
         Creates a new patient.
         """
+        print(patient_data)
         patient = Patient(id=str(uuid.uuid4()), created_at=datetime.now(), clinical_information=patient_data)
-
+        print(patient)
         database = get_connection()
         database.users.update(
             {"username": self.username}, {"$push": {"patients": patient.dict(exclude_unset=True)}}, upsert=True,
@@ -141,6 +142,6 @@ class Doctor(User):
 
         for structure in clinician["form_structure"]:
             data_structure = Form(**structure)
-            # print(data_structure)
+            #print(data_structure)
         return data_structure
 
