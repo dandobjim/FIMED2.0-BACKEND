@@ -8,7 +8,7 @@ import os
 from fimed.database import get_connection
 from fimed.model.patient import Patient
 from fimed.model.user import User
-from fimed.model.form import Form
+from fimed.model.form import Form, Row
 
 
 class Doctor(User):
@@ -132,16 +132,17 @@ class Doctor(User):
         database = get_connection()
 
         database.users.update(
-            {"username": self.username}, {"$push": {"form_structure": data_structure.dict(exclude_unset=True)}}, upsert=True,
+            {"username": self.username}, {"$set": {"form_structure": data_structure.dict(exclude_unset=True)}}, upsert=True,
         )
 
-    def get_data_structure(self) -> Form:
+    def get_data_structure(self) -> list:
         database = get_connection()
         clinician: dict = database.users.find_one({"username": self.username})
-        data_structure = {}
-
-        for structure in clinician["form_structure"]:
-            data_structure = Form(**structure)
-            #print(data_structure)
+        data_structure = []
+        for structure in clinician["form_structure"]["rows"]:
+            # print(structure)
+            # row_s = Row(**structure)
+            #print(row_s)
+            data_structure.append(structure)
         return data_structure
 

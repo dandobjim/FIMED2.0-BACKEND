@@ -59,6 +59,9 @@ class User(UserBase):
         """
         user_dict = user.dict()
         user_dict["password"] = user.hashed_password
+        user_dict["form_structure"] = []
+        user_dict["patients"] = []
+
 
         database = get_connection()
         database.users.insert_one(user_dict)
