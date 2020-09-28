@@ -40,16 +40,16 @@ async def register_patient_using_csv(file_path: str, temp_file_path: str,
 
 @router.get("/all", name="Get patients of current clinician", tags=["patient"])
 async def patients(current_doctor: UserInDB = Depends(get_current_active_user)) -> List[Patient]:
-    print("Devuelvo todos los pacientes")
+    # print("Devuelvo todos los pacientes")
     patients = []
     try:
         patients = Doctor(**current_doctor.dict()).all_patients()
-        print(patients)
+
     except Exception as e:
         logger.exception(e)
 
-    if not patients:
-        raise HTTPException(status_code=404, detail=f"No patients found for current user")
+    # if not patients:
+        # raise HTTPException(status_code=404, detail=f"No patients found for current user")
 
     return patients
 

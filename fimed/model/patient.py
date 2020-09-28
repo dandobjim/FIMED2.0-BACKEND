@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import validator, BaseModel
 
@@ -11,6 +11,8 @@ class PatientCreateRequest(BaseModel):
     def username_alphanumeric(cls, v):
         assert v.isalpha(), "must be alphanumeric"
         return v
+
+
 
 
 class Patient(BaseModel):
