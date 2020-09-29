@@ -7,12 +7,11 @@ from pydantic import validator, BaseModel
 class PatientCreateRequest(BaseModel):
     name: str
 
+
     @validator("name")
     def username_alphanumeric(cls, v):
         assert v.isalpha(), "must be alphanumeric"
         return v
-
-
 
 
 class Patient(BaseModel):

@@ -57,7 +57,7 @@ async def patients(current_doctor: UserInDB = Depends(get_current_active_user)) 
 @router.get("/search_by_patient_id", name="Get patient of current clinician by id patient", tags=["patient"])
 async def patients(id_patient: str, current_doctor: UserInDB = Depends(get_current_active_user)) -> Patient:
     patient = None
-    print(id_patient)
+    # print(id_patient)
     try:
         patient = Doctor(**current_doctor.dict()).search_by_id(id_patient)
     except Exception as e:
@@ -66,13 +66,14 @@ async def patients(id_patient: str, current_doctor: UserInDB = Depends(get_curre
     if not patient:
         raise HTTPException(status_code=404, detail=f"No patients found for current user")
 
-    return patient
+    return patient.clinical_information
 
 
-@router.post(
-    "/delete", name="Delete patient by patient_id and clinic_id", tags=["patient"]
+@router.delete(
+    "/delete/{id_patient}", name="Delete patient by patient_id and clinic_id", tags=["patient"]
 )
 async def delete_patient(id_patient:str, current_doctor: UserInDB = Depends(get_current_active_user)):
+    print(id_patient)
     try:
         patient = Doctor(**current_doctor.dict()).delete(id_patient)
         logger.debug(patient)
@@ -84,9 +85,9 @@ async def delete_patient(id_patient:str, current_doctor: UserInDB = Depends(get_
 
 
 @router.post(
-    "/update", name="Update patient", tags=["patient"]
+    "/update/{id_patient}", name="Update patient", tags=["patient"]
 )
-def update_patient(id_patient:str, patient: dict, current_doctor: UserInDB = Depends(get_current_active_user)) -> Patient:
+def update_patient(id_patient: str, patient: dict, current_doctor: UserInDB = Depends(get_current_active_user)) -> Patient:
     try:
         patient = Doctor(**current_doctor.dict()).update_patient(id_patient, patient)
         logger.debug(patient)
