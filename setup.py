@@ -22,7 +22,6 @@ install_requires = [
     "fastapi",
     "pydantic[dotenv]",
     "uvicorn",
-    "starlette",
     "aiofiles",
     "pyjwt",
     "passlib[bcrypt]",
@@ -30,7 +29,10 @@ install_requires = [
     "strconv",
     "requests",
     # database
-    "pymongo"
+    "pymongo",
+    "cryptography",
+    #package
+    "pandas"
 ]
 
 setup(

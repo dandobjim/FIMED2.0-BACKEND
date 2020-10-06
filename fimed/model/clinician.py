@@ -4,7 +4,9 @@ from typing import List
 import pandas as pd
 import json
 import os
+from cryptography.fernet import Fernet
 
+from fimed.logger import logger
 from fimed.database import get_connection
 from fimed.model.patient import Patient
 from fimed.model.user import User
@@ -13,14 +15,28 @@ from fimed.model.form import Form, Row
 
 class Doctor(User):
 
+    def encrypt_data(self,patient_data,key):
+        f = Fernet(key)
+        for i in patient_data:
+            patient_data[i] = f.encrypt(json.dumps(patient_data[i]).encode('utf-8'))
+        return patient_data
+
+    def decrypt_data(self,patient_data,key):
+        f = Fernet(key)
+        for i in patient_data:
+            patient_data[i] = f.decrypt(patient_data[i])
+        print(patient_data)
+        return patient_data
+
     def new_patient(self, patient_data: dict) -> Patient:
         """
         Creates a new patient.
         """
-        print(patient_data)
-        patient = Patient(id=str(uuid.uuid4()), created_at=datetime.now(), clinical_information=patient_data)
-        print(patient)
         database = get_connection()
+        user = database.users.find_one({"username": self.username})
+        key = user["secret_key"]
+        data_encrypted = self.encrypt_data(patient_data,key)
+        patient = Patient(id=str(uuid.uuid4()), created_at=datetime.now(), clinical_information=data_encrypted)
         database.users.update(
             {"username": self.username}, {"$push": {"patients": patient.dict(exclude_unset=True)}}, upsert=True,
         )
@@ -34,8 +50,9 @@ class Doctor(User):
         database = get_connection()
         clinician: dict = database.users.find_one({"username": self.username})
         patients_in_db = []
-
-        for patient in clinician["patients"]:
+        key = clinician["secret_key"]
+        for patients in clinician["patients"]:
+            patient = self.decrypt_data(patients,key)
             patient_model = Patient(**patient)
             patients_in_db.append(patient_model)
 

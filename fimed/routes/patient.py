@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import ValidationError
 
+
 from fimed.auth import get_current_active_user
 from fimed.logger import logger
 from fimed.model.clinician import Doctor

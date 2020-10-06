@@ -4,7 +4,7 @@
 
 <a href="https://github.com/benhid/drama"><img alt="Version: 0.0.1" src="https://img.shields.io/badge/version-0.0.1-success?color=0080FF&style=flat-square"></a>
 
-Before running `fimed`, save a copy of [`.env.template`](.env.template) as `.env` and insert your own values. 
+Before running `fimed`, save a copy of [`.env.template`](.env) as `.env` and insert your own values. 
 
 `fimed` will look for a valid `.env` file in the **current working directory**.
  In its absence, it will use environmental variables (environment variables will always take priority over values loaded from a dotenv file).

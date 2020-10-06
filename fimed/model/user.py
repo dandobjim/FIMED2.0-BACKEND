@@ -1,5 +1,6 @@
 from passlib.context import CryptContext
 from pydantic import BaseModel, validator
+from cryptography.fernet import Fernet
 
 from fimed.database import get_connection
 
@@ -61,7 +62,7 @@ class User(UserBase):
         user_dict["password"] = user.hashed_password
         user_dict["form_structure"] = []
         user_dict["patients"] = []
-
+        user_dict["secret_key"] = Fernet.generate_key()
 
         database = get_connection()
         database.users.insert_one(user_dict)
