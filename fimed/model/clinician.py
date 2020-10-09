@@ -5,37 +5,37 @@ import pandas as pd
 import json
 import os
 from cryptography.fernet import Fernet
+import base64
 
 from fimed.logger import logger
 from fimed.database import get_connection
 from fimed.model.patient import Patient
 from fimed.model.user import User
 from fimed.model.form import Form, Row
+from fimed.config import settings
 
 
 class Doctor(User):
 
-    def encrypt_data(self,patient_data,key):
-        f = Fernet(key)
+    def encrypt_data(self, patient_data):
+        f = Fernet(settings.KEY)
         for i in patient_data:
             patient_data[i] = f.encrypt(json.dumps(patient_data[i]).encode('utf-8'))
         return patient_data
 
-    def decrypt_data(self,patient_data,key):
-        f = Fernet(key)
+    def decrypt_data(self, patient_data):
+        f = Fernet(settings.KEY)
         for i in patient_data:
-            patient_data[i] = f.decrypt(patient_data[i])
-        print(patient_data)
+            patient_data[i] = f.decrypt(patient_data[i]).decode().strip('" "')
         return patient_data
 
     def new_patient(self, patient_data: dict) -> Patient:
         """
         Creates a new patient.
         """
+
         database = get_connection()
-        user = database.users.find_one({"username": self.username})
-        key = user["secret_key"]
-        data_encrypted = self.encrypt_data(patient_data,key)
+        data_encrypted = self.encrypt_data(patient_data)
         patient = Patient(id=str(uuid.uuid4()), created_at=datetime.now(), clinical_information=data_encrypted)
         database.users.update(
             {"username": self.username}, {"$push": {"patients": patient.dict(exclude_unset=True)}}, upsert=True,
@@ -50,9 +50,8 @@ class Doctor(User):
         database = get_connection()
         clinician: dict = database.users.find_one({"username": self.username})
         patients_in_db = []
-        key = clinician["secret_key"]
-        for patients in clinician["patients"]:
-            patient = self.decrypt_data(patients,key)
+        for patient in clinician["patients"]:
+            patient["clinical_information"] = self.decrypt_data(patient["clinical_information"])
             patient_model = Patient(**patient)
             patients_in_db.append(patient_model)
 
@@ -63,17 +62,13 @@ class Doctor(User):
             Search Patients by id
         """
         database = get_connection()
-        patient = None
-
+        patients = None
         clinician: dict = database.users.find_one({"username": self.username})
-        print(clinician)
-
         for patient in clinician["patients"]:
             if patient["id"] == id_patient:
-                patient = Patient(**patient)
-                print(patient.clinical_information)
-
-        return patient
+                patient["clinical_information"] = self.decrypt_data(patient["clinical_information"])
+                patients = Patient(**patient)
+        return patients
 
     def create_by_csv(self, file, temp_file):
         """
@@ -128,8 +123,8 @@ class Doctor(User):
     def update_patient(self, id_patient:str, patient_data:dict) -> Patient:
 
         database = get_connection()
-
-        patient = Patient(id=id_patient, clinical_information=patient_data)
+        patients = Patient(id=id_patient, clinical_information=patient_data)
+        patients.clinical_information = self.encrypt_data(patients.clinical_information)
 
         database.users.update(
             {
@@ -138,12 +133,12 @@ class Doctor(User):
             },
             {
                 "$set": {
-                    "patients.$.clinical_information": patient.clinical_information
+                    "patients.$.clinical_information": patients.clinical_information
                 }
             }
         )
 
-        return patient
+        return patients
 
     def create_form(self, data_structure:Form) -> Form:
         database = get_connection()
