@@ -26,8 +26,24 @@ class Doctor(User):
     def decrypt_data(self, patient_data):
         f = Fernet(settings.KEY)
         for i in patient_data:
-            patient_data[i] = f.decrypt(patient_data[i]).decode().strip('" "')
+            patient_data[i]["value"] = bytes(patient_data[i]["value"].replace("'", '"')[2:-1],'utf-8')
+            patient_data[i]["value"] = f.decrypt(patient_data[i]["value"]).decode('utf-8').replace('"',"")
+            print(patient_data[i])
         return patient_data
+
+    def encrypt_csv(self, csv_data, temp_file):
+        f = Fernet(settings.KEY)
+        csv_data.to_json(temp_file, orient="records", date_format="epoch", double_precision=10,
+                         force_ascii=True, date_unit="ms", default_handler=None)
+
+        with open(temp_file) as data_file:
+            data = json.load(data_file)
+            for d in data:
+                for j in d:
+                    d[j] = {"value": str(f.encrypt(json.dumps(d[j]).encode('utf-8'))), "type": str(type(d[j]))}
+
+        with open (temp_file, 'w') as outfile:
+            json.dump(data, outfile)
 
     def new_patient(self, patient_data: dict) -> Patient:
         """
@@ -70,16 +86,15 @@ class Doctor(User):
                 patients = Patient(**patient)
         return patients
 
-    def create_by_csv(self, file, temp_file):
+    def create_by_csv(self, file):
         """
             Create patients using csv file
         """
         database = get_connection()
         col = database.users
-
+        temp_file = "data/data.json"
         csv_file = pd.DataFrame(pd.read_csv(file, sep=";", header=0, index_col=False))
-        csv_file.to_json(temp_file, orient="records", date_format="epoch", double_precision=10,
-                         force_ascii=True, date_unit="ms", default_handler=None)
+        self.encrypt_csv(csv_file, temp_file)
 
         with open(temp_file) as data_file:
             data = json.load(data_file)
@@ -100,61 +115,63 @@ class Doctor(User):
                 )
         os.remove(temp_file)
 
-    def delete(self, id_patient: str):
-        """
-            Delete patients by id
-        """
-        database = get_connection()
-        col = database.users
 
-        col.update(
-            {
-                "username": self.username
-            },
-            {
-                "$pull": {
-                    "patients": {
-                        "id": id_patient
-                    }
+def delete(self, id_patient: str):
+    """
+        Delete patients by id
+    """
+    database = get_connection()
+    col = database.users
+
+    col.update(
+        {
+            "username": self.username
+        },
+        {
+            "$pull": {
+                "patients": {
+                    "id": id_patient
                 }
             }
-        )
+        }
+    )
 
-    def update_patient(self, id_patient:str, patient_data:dict) -> Patient:
 
-        database = get_connection()
-        patients = Patient(id=id_patient, clinical_information=patient_data)
-        patients.clinical_information = self.encrypt_data(patients.clinical_information)
+def update_patient(self, id_patient: str, patient_data: dict) -> Patient:
+    database = get_connection()
+    patients = Patient(id=id_patient, clinical_information=patient_data)
+    patients.clinical_information = self.encrypt_data(patients.clinical_information)
 
-        database.users.update(
-            {
-                "username": self.username,
-                "patients.id": id_patient
-            },
-            {
-                "$set": {
-                    "patients.$.clinical_information": patients.clinical_information
-                }
+    database.users.update(
+        {
+            "username": self.username,
+            "patients.id": id_patient
+        },
+        {
+            "$set": {
+                "patients.$.clinical_information": patients.clinical_information
             }
-        )
+        }
+    )
 
-        return patients
+    return patients
 
-    def create_form(self, data_structure:Form) -> Form:
-        database = get_connection()
 
-        database.users.update(
-            {"username": self.username}, {"$set": {"form_structure": data_structure.dict(exclude_unset=True)}}, upsert=True,
-        )
+def create_form(self, data_structure: Form) -> Form:
+    database = get_connection()
 
-    def get_data_structure(self) -> list:
-        database = get_connection()
-        clinician: dict = database.users.find_one({"username": self.username})
-        data_structure = []
-        for structure in clinician["form_structure"]["rows"]:
-            # print(structure)
-            # row_s = Row(**structure)
-            #print(row_s)
-            data_structure.append(structure)
-        return data_structure
+    database.users.update(
+        {"username": self.username}, {"$set": {"form_structure": data_structure.dict(exclude_unset=True)}}, upsert=True,
+    )
 
+
+def get_data_structure(self) -> list:
+    database = get_connection()
+    clinician: dict = database.users.find_one({"username": self.username})
+    data_structure = []
+    for structure in clinician["form_structure"]["rows"]:
+        # print(structure)
+        # row_s = Row(**structure)
+        # print(row_s)
+        data_structure.append(structure)
+    return data_structure
