@@ -28,10 +28,10 @@ async def register(patient: dict, current_doctor: UserInDB = Depends(get_current
 
 
 @router.post("/create_by_csv", name="Insert patient by csv file", tags=["patient"])
-async def register_patient_using_csv(file_path: str,
+async def register_patient_using_csv(file: dict,
                                      current_doctor: UserInDB = Depends(get_current_active_user)):
     try:
-        Doctor(**current_doctor.dict()).create_by_csv(file_path)
+        Doctor(**current_doctor.dict()).create_by_csv(file)
     except ValidationError as e:
         logger.exception(e)
         raise HTTPException(status_code=500, detail=f"Patient could not be created")
