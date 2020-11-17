@@ -20,36 +20,40 @@ class Doctor(User):
     def encrypt_data(self, patient_data):
         f = Fernet(settings.KEY)
         for i in patient_data:
-            patient_data[i] = f.encrypt(json.dumps(patient_data[i]).encode('utf-8'))
-        return patient_data
 
-    def decrypt_data(self, patient_data):
-        f = Fernet(settings.KEY)
-        for i in patient_data:
-            patient_data[i]["value"] = bytes(patient_data[i]["value"].replace("'", '"')[2:-1], 'utf-8')
-            patient_data[i]["value"] = f.decrypt(patient_data[i]["value"]).decode('utf-8').replace('"', "")
-            print(patient_data[i])
+            patient_data[i] = {"value": f.encrypt(json.dumps(patient_data[i]["value"]).encode('utf-8')),
+                               "type": str(type(i))}
         return patient_data
 
     def encrypt_csv(self, csv_data, temp_file):
         f = Fernet(settings.KEY)
         csv_data.to_json(temp_file, orient="records", date_format="epoch", double_precision=10,
                          force_ascii=True, date_unit="ms", default_handler=None)
-
         with open(temp_file) as data_file:
             data = json.load(data_file)
             for d in data:
                 for j in d:
                     d[j] = {"value": str(f.encrypt(json.dumps(d[j]).encode('utf-8'))), "type": str(type(d[j]))}
-
         with open(temp_file, 'w') as outfile:
             json.dump(data, outfile)
+
+    def decrypt_data(self, patient_data):
+        f = Fernet(settings.KEY)
+        for i in patient_data:
+            patient_data[i]["value"] = f.decrypt(patient_data[i]["value"]).decode('utf-8').strip('"')
+        return patient_data
+
+    def decrypt_csv(self, patient_data):
+        f = Fernet(settings.KEY)
+        for i in patient_data:
+            patient_data[i]["value"] = bytes(patient_data[i]["value"].strip("b'"), 'utf-8')
+            patient_data[i]["value"] = f.decrypt(patient_data[i]["value"]).decode('utf-8').strip('"')
+        return patient_data
 
     def new_patient(self, patient_data: dict) -> Patient:
         """
         Creates a new patient.
         """
-
         database = get_connection()
         data_encrypted = self.encrypt_data(patient_data)
         patient = Patient(id=str(uuid.uuid4()), created_at=datetime.now(), clinical_information=data_encrypted)
@@ -67,10 +71,13 @@ class Doctor(User):
         clinician: dict = database.users.find_one({"username": self.username})
         patients_in_db = []
         for patient in clinician["patients"]:
-            patient["clinical_information"] = self.decrypt_data(patient["clinical_information"])
+            try:
+                patient["clinical_information"] = self.decrypt_data(patient["clinical_information"])
+            except:
+                patient["clinical_information"] = self.decrypt_csv(patient["clinical_information"])
+            patient["clinical_information"]
             patient_model = Patient(**patient)
             patients_in_db.append(patient_model)
-
         return patients_in_db
 
     def search_by_id(self, id_patient: str) -> Patient:
@@ -79,11 +86,16 @@ class Doctor(User):
         """
         database = get_connection()
         patients = None
+        print(id_patient)
         clinician: dict = database.users.find_one({"username": self.username})
         for patient in clinician["patients"]:
             if patient["id"] == id_patient:
-                patient["clinical_information"] = self.decrypt_data(patient["clinical_information"])
+                try:
+                    patient["clinical_information"] = self.decrypt_data(patient["clinical_information"])
+                except:
+                    patient["clinical_information"] = self.decrypt_csv(patient["clinical_information"])
                 patients = Patient(**patient)
+        print(patient)
         return patients
 
     def delete(self, id_patient: str):
@@ -110,7 +122,6 @@ class Doctor(User):
         database = get_connection()
         patients = Patient(id=id_patient, clinical_information=patient_data)
         patients.clinical_information = self.encrypt_data(patients.clinical_information)
-
         database.users.update(
             {
                 "username": self.username,
@@ -133,42 +144,52 @@ class Doctor(User):
             upsert=True,
         )
 
+    def create_form_by_csv(self, file):
+        database = get_connection()
+        cols = []
+        for col in file.columns.values:
+            cols.append({"name": col, "rtype": "<class " + str(file.dtypes[col]) + ">"})
+
+        form_structure = {"rows": cols}
+
+        database.users.update(
+            {"username": self.username}, {"$set": {"form_structure": form_structure}},
+            upsert=True,
+        )
+
     def get_data_structure(self) -> list:
         database = get_connection()
         clinician: dict = database.users.find_one({"username": self.username})
         data_structure = []
         if clinician["form_structure"] != {}:
             for structure in clinician["form_structure"]["rows"]:
-                # print(structure)
                 # row_s = Row(**structure)
-                # print(row_s)
                 data_structure.append(structure)
         return data_structure
 
     def create_by_csv(self, file):
-        print(file)
+        database = get_connection()
+        col = database.users
+        temp_file = "data/data.json"
+        csv_file = pd.DataFrame(pd.read_csv(file.file, sep=";", header=0, index_col=False))
+        self.create_form_by_csv(csv_file)
+        self.encrypt_csv(csv_file, temp_file)
 
-    # database = get_connection()
-    # col = database.users
-    # temp_file = "data/data.json"
-    # csv_file = pd.DataFrame(pd.read_csv(file, sep=";", header=0, index_col=False))
-    # self.encrypt_csv(csv_file, temp_file)
-    #
-    # with open(temp_file) as data_file:
-    #     data = json.load(data_file)
-    #     for d in data:
-    #         col.update(
-    #             {
-    #                 "username": self.username
-    #             },
-    #             {
-    #                 "$push": {
-    #                     "patients": {
-    #                         "id": str(uuid.uuid4()),
-    #                         "clinical_information": d,
-    #                         "created_at": datetime.now()
-    #                     }
-    #                 }
-    #             }
-    #         )
-    # os.remove(temp_file)
+        with open(temp_file) as data_file:
+            data = json.load(data_file)
+            for d in data:
+                col.update(
+                    {
+                        "username": self.username
+                    },
+                    {
+                        "$push": {
+                            "patients": {
+                                "id": str(uuid.uuid4()),
+                                "clinical_information": d,
+                                "created_at": datetime.now()
+                            }
+                        }
+                    }
+                )
+        os.remove(temp_file)

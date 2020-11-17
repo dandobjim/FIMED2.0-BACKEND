@@ -1,8 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, FastAPI, UploadFile, File
 from pydantic import ValidationError
-
 
 from fimed.auth import get_current_active_user
 from fimed.logger import logger
@@ -28,7 +27,7 @@ async def register(patient: dict, current_doctor: UserInDB = Depends(get_current
 
 
 @router.post("/create_by_csv", name="Insert patient by csv file", tags=["patient"])
-async def register_patient_using_csv(file: dict,
+async def register_patient_using_csv(file: UploadFile = File(...),
                                      current_doctor: UserInDB = Depends(get_current_active_user)):
     try:
         Doctor(**current_doctor.dict()).create_by_csv(file)
