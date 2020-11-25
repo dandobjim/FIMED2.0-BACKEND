@@ -5,14 +5,15 @@ import pandas as pd
 import json
 import os
 from cryptography.fernet import Fernet
-import base64
 
 from fimed.logger import logger
 from fimed.database import get_connection
-from fimed.model.patient import Patient
+from fimed.model.patients import Patients
 from fimed.model.user import User
 from fimed.model.form import Form, Row
 from fimed.config import settings
+from bson.objectid import ObjectId
+
 
 
 class Doctor(User):
@@ -50,20 +51,28 @@ class Doctor(User):
             patient_data[i]["value"] = f.decrypt(patient_data[i]["value"]).decode('utf-8').strip('"')
         return patient_data
 
-    def new_patient(self, patient_data: dict) -> Patient:
+    def new_patient(self, patient_data: dict, user) -> Patients:
         """
         Creates a new patient.
         """
         database = get_connection()
         data_encrypted = self.encrypt_data(patient_data)
-        patient = Patient(id=str(uuid.uuid4()), created_at=datetime.now(), clinical_information=data_encrypted)
+        patient = Patients(id=str(uuid.uuid4()), created_at=datetime.now(), clinical_information=data_encrypted)
+        for doc in database.users.find({"username": user["username"]}):
+            user_id = doc
         database.users.update(
-            {"username": self.username}, {"$push": {"patients": patient.dict(exclude_unset=True)}}, upsert=True,
+            {"username": self.username}, {"$push": {"patients": patient.id}}, upsert=True,
+        )
+        database.patients.insert(
+            {
+                "user_id": user_id["_id"],
+                "patient_data": patient.dict(exclude_unset=True)
+            }
         )
 
         return patient
 
-    def all_patients(self) -> List[Patient]:
+    def all_patients(self) -> List[Patients]:
         """
         Search patients by username.
         """
@@ -76,17 +85,16 @@ class Doctor(User):
             except:
                 patient["clinical_information"] = self.decrypt_csv(patient["clinical_information"])
             patient["clinical_information"]
-            patient_model = Patient(**patient)
+            patient_model = Patients(**patient)
             patients_in_db.append(patient_model)
         return patients_in_db
 
-    def search_by_id(self, id_patient: str) -> Patient:
+    def search_by_id(self, id_patient: str) -> Patients:
         """
             Search Patients by id
         """
         database = get_connection()
         patients = None
-        print(id_patient)
         clinician: dict = database.users.find_one({"username": self.username})
         for patient in clinician["patients"]:
             if patient["id"] == id_patient:
@@ -94,8 +102,7 @@ class Doctor(User):
                     patient["clinical_information"] = self.decrypt_data(patient["clinical_information"])
                 except:
                     patient["clinical_information"] = self.decrypt_csv(patient["clinical_information"])
-                patients = Patient(**patient)
-        print(patient)
+                patients = Patients(**patient)
         return patients
 
     def delete(self, id_patient: str):
@@ -118,9 +125,9 @@ class Doctor(User):
             }
         )
 
-    def update_patient(self, id_patient: str, patient_data: dict) -> Patient:
+    def update_patient(self, id_patient: str, patient_data: dict) -> Patients:
         database = get_connection()
-        patients = Patient(id=id_patient, clinical_information=patient_data)
+        patients = Patients(id=id_patient, clinical_information=patient_data)
         patients.clinical_information = self.encrypt_data(patients.clinical_information)
         database.users.update(
             {
@@ -140,7 +147,7 @@ class Doctor(User):
         database = get_connection()
 
         database.users.update(
-            {"username": self.username}, {"$set": {"form_structure": data_structure.dict(exclude_unset=True)}},
+            {"username": self.username}, {"$set": {"general_form": data_structure.dict(exclude_unset=True)}},
             upsert=True,
         )
 
@@ -161,8 +168,8 @@ class Doctor(User):
         database = get_connection()
         clinician: dict = database.users.find_one({"username": self.username})
         data_structure = []
-        if clinician["form_structure"] != {}:
-            for structure in clinician["form_structure"]["rows"]:
+        if clinician["general_form"] != {}:
+            for structure in clinician["general_form"]["rows"]:
                 # row_s = Row(**structure)
                 data_structure.append(structure)
         return data_structure

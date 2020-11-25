@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from fimed.auth import get_current_active_user
 from fimed.logger import logger
 from fimed.model.clinician import Doctor
-from fimed.model.patient import Patient
+from fimed.model.patients import Patients
 from fimed.model.user import UserInDB
 
 from fimed.model.form import Form

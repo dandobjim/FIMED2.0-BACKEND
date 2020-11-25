@@ -6,16 +6,16 @@ from pydantic import ValidationError
 from fimed.auth import get_current_active_user
 from fimed.logger import logger
 from fimed.model.clinician import Doctor
-from fimed.model.patient import Patient
+from fimed.model.patients import Patients
 from fimed.model.user import UserInDB
 
 router = APIRouter()
 
 
 @router.post("/create", name="Create patient and assign to self", tags=["patient"])
-async def register(patient: dict, current_doctor: UserInDB = Depends(get_current_active_user)) -> Patient:
+async def register(patient: dict, current_doctor: UserInDB = Depends(get_current_active_user)) -> Patients:
     try:
-        patient = Doctor(**current_doctor.dict()).new_patient(patient)
+        patient = Doctor(**current_doctor.dict()).new_patient(patient, current_doctor.dict())
         logger.debug(patient)
     except ValidationError as e:
         logger.exception(e)
@@ -39,7 +39,7 @@ async def register_patient_using_csv(file: UploadFile = File(...),
 
 
 @router.get("/all", name="Get patients of current clinician", tags=["patient"])
-async def patients(current_doctor: UserInDB = Depends(get_current_active_user)) -> List[Patient]:
+async def patients(current_doctor: UserInDB = Depends(get_current_active_user)) -> List[Patients]:
     # print("Devuelvo todos los pacientes")
     patients = []
     try:
@@ -87,7 +87,7 @@ async def delete_patient(id_patient:str, current_doctor: UserInDB = Depends(get_
 @router.post(
     "/update/{id_patient}", name="Update patient", tags=["patient"]
 )
-def update_patient(id_patient: str, patient: dict, current_doctor: UserInDB = Depends(get_current_active_user)) -> Patient:
+def update_patient(id_patient: str, patient: dict, current_doctor: UserInDB = Depends(get_current_active_user)) -> Patients:
     try:
         patient = Doctor(**current_doctor.dict()).update_patient(id_patient, patient)
         logger.debug(patient)

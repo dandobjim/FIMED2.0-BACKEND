@@ -1,7 +1,8 @@
+import uuid
+
 from passlib.context import CryptContext
 from pydantic import BaseModel, validator
 from cryptography.fernet import Fernet
-
 from fimed.database import get_connection
 
 
@@ -17,8 +18,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class UserBase(BaseModel):
     username: str
-    fullname: str = None
+    name: str = None
+    surname: str = None
     email: str
+
 
 
 class UserCreateRequest(UserBase):
@@ -60,9 +63,10 @@ class User(UserBase):
         """
         user_dict = user.dict()
         user_dict["password"] = user.hashed_password
-        user_dict["form_structure"] = []
+        user_dict["general_form"] = []
         user_dict["patients"] = []
-
+        user_dict["analysis_form"] = []
+        user_dict["encryption_key"] = Fernet.generate_key()
         database = get_connection()
         database.users.insert_one(user_dict)
 

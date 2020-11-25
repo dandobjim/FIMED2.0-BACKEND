@@ -48,6 +48,4 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 @router.get("/user/me", name="Get user data", tags=["user"], response_model=UserInDB)
 async def read_users_me(current_user: UserInDB = Depends(get_current_active_user)):
-    #print("User: ")
-    #print(current_user)
     return current_user
