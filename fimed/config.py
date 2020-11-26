@@ -14,7 +14,6 @@ class _Settings(BaseSettings):
     # api settings
     API_HOST: str = "localhost"
     API_PORT: int = 8080
-    KEY: bytes = 'vFH_ElJI0ZNdFhiB_VukhNucV22nQ8oekP-V6keGgx4='
     # for applications sub-mounted below a given URL path
     ROOT_PATH: str = ""
 

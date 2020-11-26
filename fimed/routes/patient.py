@@ -55,7 +55,7 @@ async def patients(current_doctor: UserInDB = Depends(get_current_active_user)) 
 
 
 @router.get("/search_by_patient_id", name="Get patient of current clinician by id patient", tags=["patient"])
-async def patients(id_patient: str, current_doctor: UserInDB = Depends(get_current_active_user)) :
+async def patients(id_patient, current_doctor: UserInDB = Depends(get_current_active_user)) :
     patient = None
     # print(id_patient)
     try:

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Optional, List
 
@@ -16,11 +17,9 @@ class PatientCreateRequest(BaseModel):
 
 
 class Patients(BaseModel):
-    _id: str
+    id_secondary:str
     clinical_information: dict
     sex: bool = None
-    created_at: Optional[datetime] = None
-
     @staticmethod
     def save(patients: PatientCreateRequest):
         """
