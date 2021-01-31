@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
 from typing import List
+
+import joblib
 import pandas as pd
 import json
 import os
@@ -8,12 +10,23 @@ from cryptography.fernet import Fernet
 
 from fimed.logger import logger
 from fimed.database import get_connection
+from fimed.minio_file import minio_connection
 from fimed.model.patients import Patients
 from fimed.model.user import User
 from fimed.model.form import Form, Row
 from fimed.config import settings
 from bson.objectid import ObjectId
 
+#Analysis
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, accuracy_score
+from joblib import dump, load
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
 
 
 class Doctor(User):
@@ -199,3 +212,75 @@ class Doctor(User):
                     {"username": self.username}, {"$push": {"patients": secondary_id}}, upsert=True,
                 )
         os.remove(temp_file)
+
+    def upload_file_minio(self,file):
+        database = get_connection()
+        col = database.users
+        user_data = col.find_one({"username": self.username})
+        minio = minio_connection()
+        found = minio.bucket_exists(str(user_data["_id"]))
+        if not found:
+            minio.make_bucket(str(user_data["_id"]))
+        else:
+            print("Bucket 'asiatrip' already exists")
+
+        result = minio.put_object(
+            str(user_data["_id"]),str(user_data["_id"])+"_anlaysis", file.file, length=-1, part_size=10 * 1024 * 1024,
+        )
+        print(
+            "created {0} object; etag: {1}, version-id: {2}".format(
+                result.object_name, result.etag, result.version_id,
+            ),
+        )
+
+    def create_model(self,file):
+        data = pd.read_csv(file.file, sep=";")
+        print(data.shape)
+        ncolumns = data.columns.size
+        X = data.iloc[:, 0:ncolumns - 1].values
+        Y = data.iloc[:, ncolumns - 1].values
+        labelencoder_Y = LabelEncoder()
+        Y = labelencoder_Y.fit_transform(Y)
+        sc = StandardScaler()
+        X = sc.fit_transform(X)
+        classifier = RandomForestClassifier(n_estimators=10, criterion='entropy', random_state=0)
+        classifier.fit(X, Y)
+        dump(classifier, 'randomForest.joblib')
+        #database
+        database = get_connection()
+        col = database.users
+        user_data = col.find_one({"username": self.username})
+        #minio
+        minio = minio_connection()
+        found = minio.bucket_exists(str(user_data["_id"]))
+        if not found:
+            minio.make_bucket(str(user_data["_id"]))
+        else:
+            print("Bucket 'asiatrip' already exists")
+
+        with open('randomForest.joblib', 'rb') as file_data:
+            result = minio.put_object(str(user_data["_id"]), 'model', file_data,
+                                   length=-1, part_size=10 * 1024 * 1024)
+        print(
+            "created {0} object; etag: {1}, version-id: {2}".format(
+                result.object_name, result.etag, result.version_id,
+            ),
+        )
+        os.remove('randomForest.joblib')
+
+    def prediction(self, file):
+        #Minio
+        database = get_connection()
+        col = database.users
+        user_data = col.find_one({"username": self.username})
+        minio = minio_connection()
+        minio.fget_object(str(user_data["_id"]), "model", "model.joblib")
+        filename = 'model.joblib'
+        loaded_model = joblib.load(filename)
+        #Read data
+        data = pd.read_csv(file.file, sep=";")
+        sc = StandardScaler()
+        X = sc.fit_transform(data)
+        pred = loaded_model.predict(X)
+        os.remove('model.joblib')
+        return pred

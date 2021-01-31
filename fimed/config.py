@@ -7,7 +7,7 @@ from fimed.logger import logger
 
 class MongoDns(AnyUrl):
     allowed_schemes = {"mongodb"}
-    user_required = True
+    user_required = False
 
 
 class _Settings(BaseSettings):
@@ -18,8 +18,12 @@ class _Settings(BaseSettings):
     ROOT_PATH: str = ""
 
     # database connection
-    MONGO_DNS: MongoDns = "mongodb://root:root@localhost:27017"
+    MONGO_DNS: MongoDns = "mongodb://localhost:27017"
 
+    # Mongo settings
+    MINNIO_CONN = "localhost:9000"
+    ACCESS_KEY = "FIMED"
+    SECRET_KEY = "FIMEDFIMED"
     class Config:
         if not Path(".env").is_file():
             logger.warning("⚠️ `.env` not found in current directory")

@@ -32,6 +32,7 @@ install_requires = [
     "pymongo",
     "cryptography",
     #package
+    "numpy",
     "pandas"
 ]
 

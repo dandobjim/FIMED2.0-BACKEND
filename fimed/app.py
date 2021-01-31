@@ -10,7 +10,7 @@ from fimed.logger import logger
 from fimed.routes.authentication import router as auth_router
 from fimed.routes.patient import router as patient_router
 from fimed.routes.form import router as form_router
-
+from fimed.routes.analysis import router as analysis_router
 
 app = FastAPI(
     title="FIMED",
@@ -40,6 +40,7 @@ async def health():
 app.include_router(auth_router, prefix="/api/v2/auth")
 app.include_router(patient_router, prefix="/api/v2/patient")
 app.include_router(form_router, prefix="/api/v2/form")
+app.include_router(analysis_router, prefix="/api/v2/analysis")
 
 
 def run_server():
