@@ -9,6 +9,8 @@ from fimed.model.clinician import Doctor
 from fimed.model.patients import Patients
 from fimed.model.user import UserInDB
 
+import numpy as np
+
 router = APIRouter()
 
 
@@ -35,11 +37,13 @@ async def create_model(file: UploadFile = File(...), current_doctor:UserInDB = D
 
 
 @router.post("/prediction", name="Execute prediction's algorithm", tags=["analysis"])
-async def create_model(file: UploadFile = File(...), current_doctor:UserInDB = Depends(get_current_active_user)):
+async def prediction(file: UploadFile = File(...), current_doctor:UserInDB = Depends(get_current_active_user)) -> List[int]:
     try:
-        Doctor(**current_doctor.dict()).prediction(file)
+        prediction= Doctor(**current_doctor.dict()).prediction(file)
     except ValidationError as e:
         logger.exception(e)
         raise HTTPException(status_code=500, detail=f"Alforithm could not be executed")
     except Exception as e:
         logger.exception(e)
+    prediction_list: List[int] = prediction.tolist()
+    return prediction_list

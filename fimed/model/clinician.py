@@ -268,7 +268,7 @@ class Doctor(User):
         )
         os.remove('randomForest.joblib')
 
-    def prediction(self, file):
+    def prediction(self, file) -> np.ndarray:
         #Minio
         database = get_connection()
         col = database.users
